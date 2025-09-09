@@ -1,3 +1,4 @@
+# backend/main.py
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -7,16 +8,27 @@ import json
 from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 load_dotenv()
 
 # --- 1. SET UP THE MODEL ---
 
+# This line correctly reads the key from the environment variables you'll set on Render
 google_api_key = os.getenv("GOOGLE_API_KEY")
-model = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=google_api_key)
+
+# **CHANGE 1: Added a check for the API key**
+# This will cause the server to fail fast on startup if the key is missing.
+if not google_api_key:
+    raise ValueError("GOOGLE_API_KEY environment variable not found.")
+
+# **CHANGE 2: Corrected the Gemini model name**
+# 'gemini-2.5-flash-lite' is not a valid model name. 'gemini-1.5-flash-latest' is the correct one.
+model = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=google_api_key)
 
 # --- 2. MEMORY HANDLER USING JSON FILES ---
+# WARNING: This memory is temporary on platforms like Render with ephemeral filesystems.
+# It will be deleted when the server restarts.
 
 class FileMemory:
     def __init__(self, base_dir="./memory_data"):
@@ -44,7 +56,7 @@ file_memory = FileMemory()
 # --- 3. SET UP THE FASTAPI APP ---
 
 app = FastAPI(
-    title="LangGraph Chatbot Server with File-Based Memory",
+    title="Chatbot Server with File-Based Memory",
     description="A simple API server for a chatbot with memory stored in JSON files.",
 )
 
@@ -67,32 +79,22 @@ async def chat_endpoint(request: ChatRequest):
             messages.append(HumanMessage(content=msg["content"]))
         elif msg["type"] == "ai":
             messages.append(AIMessage(content=msg["content"]))
-        elif msg["type"] == "system":
-            messages.append(SystemMessage(content=msg["content"]))
 
     # Append the new user message
     human_input = HumanMessage(content=request.message)
     messages.append(human_input)
-
-    # Prepare the prompt
-    system_prompt = SystemMessage(
-        content="You are a helpful AI assistant named Easy. Your tone is friendly and direct. Always refer to yourself as Easy."
-    )
-    messages_with_system_prompt = [system_prompt] + messages
-
+    
     # Get AI response
-    response = model.invoke(messages_with_system_prompt)
+    response = model.invoke(messages)
 
     # Append AI message to the conversation
     messages.append(response)
 
     # Save updated conversation
-    # Convert messages to dicts for JSON serialization
     state_to_save = {
         "messages": [
             {"type": "human", "content": msg.content} if isinstance(msg, HumanMessage) else
-            {"type": "ai", "content": msg.content} if isinstance(msg, AIMessage) else
-            {"type": "system", "content": msg.content}
+            {"type": "ai", "content": msg.content}
             for msg in messages
         ]
     }
@@ -102,10 +104,11 @@ async def chat_endpoint(request: ChatRequest):
 
 @app.get("/")
 def read_root():
-    return {"message": "LangGraph Chatbot Server with persistent memory is running."}
+    return {"message": "Chatbot Server with persistent memory is running."}
 
 # --- 4. RUN THE SERVER ---
 
 if __name__ == "__main__":
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
-#working code 111 lines
+    # **CHANGE 3: Logic to get the port from the environment for deployment**
+    port = int(os.environ.get("PORT", 8000)) # Use Render's PORT, default to 8000 for local
+    uvicorn.run("main:app", host="0.0.0.0", port=port) # Removed reload=True
