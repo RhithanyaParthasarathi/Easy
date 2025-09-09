@@ -13,7 +13,7 @@ st.set_page_config(
 
 # --- BACKEND URL ---
 #BACKEND_URL = "http://127.0.0.1:8000/chat"
-BACKEND_URL ="https://easy-gs1m.onrender.com"
+BACKEND_URL ="https://easy-gs1m.onrender.com/chat"
 
 # --- MINIMAL CSS FOR ALIGNMENT ONLY ---
 # This is the only style we need. It finds the user's message container and aligns it to the right.
