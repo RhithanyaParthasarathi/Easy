@@ -1,0 +1,37 @@
+# --- Virtual Environment ---
+# Ignore the virtual environment folder
+.venv/
+venv/
+env/
+
+# --- Python Cache & Artifacts ---
+# Ignore Python's bytecode cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Secrets ---
+# Ignore all .env files, wherever they are
+*.env
+.env.*
+
+# --- Generated Data ---
+# Ignore folders containing session data, chat history, etc.
+memory_data/
+chat_history/
+
+# --- Operating System Files ---
+# Ignore Mac and Windows specific files
+.DS_Store
+Thumbs.db
+
+# --- IDE / Editor Specific ---
+# Ignore configuration files from popular editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Log Files ---
+# Ignore any log files
+*.log
